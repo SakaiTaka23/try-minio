@@ -1,5 +1,18 @@
 version: '3.9'
 services:
+  backend:
+    build:
+      context: 'backend'
+      target: dev
+    environment:
+      AWS_ACCESS_KEY_ID: minio
+      AWS_SECRET_ACCESS_KEY: minio123
+    ports:
+      - 5000:5000
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - minio
   minio:
     image: minio/minio:RELEASE.2022-03-11T23-57-45Z.fips
     ports:
@@ -9,9 +22,7 @@ services:
       - MINIO_ROOT_USER=minio
       - MINIO_ROOT_PASSWORD=minio123
     entrypoint: sh
-    command: -c "
-      minio server /data --console-address :9001;
-      "
+    command: -c "minio server /data --console-address :9001;"
     volumes:
       - ./minio/data:/data
       - ./minio/export:/export
