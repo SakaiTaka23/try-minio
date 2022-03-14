@@ -1,3 +1,4 @@
 /minio/config
 /minio/data
 /minio/export/static
+/backend/tmp
