@@ -1,12 +1,15 @@
 package main
 
 import (
+	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/labstack/echo"
 )
 
@@ -26,6 +29,7 @@ func main() {
 	e := echo.New()
 
 	e.GET("/static", getObjects)
+	e.POST("/upload", storeObject)
 
 	e.Logger.Fatal(e.Start(":5000"))
 }
@@ -54,6 +58,31 @@ func getObjects(c echo.Context) error {
 		)
 	}
 	return c.JSON(http.StatusOK, objects)
+}
+
+func storeObject(c echo.Context) error {
+	sess := createSession()
+
+	targetFilePath := "./upload.txt"
+	file, err := os.Open(targetFilePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	bucket := "static"
+	objectKey := "upload-key.txt"
+
+	uploader := s3manager.NewUploader(sess)
+	_, err = uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(objectKey),
+		Body:   file,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	return c.JSON(http.StatusOK, "done")
 }
 
 // セッションを返す
