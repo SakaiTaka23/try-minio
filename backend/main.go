@@ -3,13 +3,14 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/google/uuid"
 	"github.com/labstack/echo"
 )
 
@@ -61,26 +62,35 @@ func getObjects(c echo.Context) error {
 }
 
 func storeObject(c echo.Context) error {
+	file, err := c.FormFile("file")
+	if err != nil {
+		return err
+	}
+	src, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	fileModel := strings.Split(file.Filename, ".")
+	fileName := uuid.New().String()
+	fileExtension := fileModel[1]
+
+	log.Println("got file", fileModel, fileName, fileExtension)
+
 	sess := createSession()
 
-	targetFilePath := "./upload.txt"
-	file, err := os.Open(targetFilePath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
 	bucket := "static"
-	objectKey := "upload-key.txt"
+	objectKey := fileName + "." + fileExtension
 
 	uploader := s3manager.NewUploader(sess)
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(objectKey),
-		Body:   file,
+		Body:   src,
 	})
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	return c.JSON(http.StatusOK, "done")
 }
