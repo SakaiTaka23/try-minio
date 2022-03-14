@@ -62,6 +62,7 @@ func getObjects(c echo.Context) error {
 }
 
 func storeObject(c echo.Context) error {
+	// 画像ファイル取得
 	file, err := c.FormFile("file")
 	if err != nil {
 		return err
@@ -72,17 +73,20 @@ func storeObject(c echo.Context) error {
 	}
 	defer src.Close()
 
+	// 名前を変更
 	fileModel := strings.Split(file.Filename, ".")
 	fileName := uuid.New().String()
 	fileExtension := fileModel[1]
 
 	log.Println("got file", fileModel, fileName, fileExtension)
 
+	// AWS設定
 	sess := createSession()
 
 	bucket := "static"
 	objectKey := fileName + "." + fileExtension
 
+	// アップロード
 	uploader := s3manager.NewUploader(sess)
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(bucket),
